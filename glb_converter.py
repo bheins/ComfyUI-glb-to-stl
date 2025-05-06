@@ -5,7 +5,7 @@ from pygltflib import GLTF2
 
 class GLBToSTLNode:
     def __init__(self):
-        self.output_dir = "outputsglb_to_stl"
+        self.output_dir = "output/glb_to_stl"
         os.makedirs(self.output_dir, exist_ok=True)
         
     @classmethod

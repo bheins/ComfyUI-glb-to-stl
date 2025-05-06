@@ -1,0 +1,3 @@
+trimesh>=3.9.0
+numpy>=1.21.0
+pygltflib>=0.4.0
