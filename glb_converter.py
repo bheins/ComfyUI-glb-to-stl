@@ -112,11 +112,16 @@ class Mesh3DExporterNode:
             print(f"Attempting to export {format} to: {output_path}")
             
             if format == "3MF":
-                # Export using pymeshlab for 3MF
-                ms = pymeshlab.MeshSet()
-                # Convert trimesh vertices and faces to numpy arrays for pymeshlab
-                ms.add_mesh(vertices=mesh_obj.vertices, faces=mesh_obj.faces)
-                ms.save_current_mesh(output_path)
+                try:
+                    # Export using pymeshlab for 3MF
+                    ms = pymeshlab.MeshSet()
+                    # Create a new mesh from vertex and face arrays
+                    ms.add_mesh(vertex_matrix=mesh_obj.vertices, face_matrix=mesh_obj.faces)
+                    ms.save_current_mesh(output_path)
+                except Exception as e:
+                    print(f"Error with pymeshlab export: {str(e)}")
+                    # Fallback to trimesh export
+                    mesh_obj.export(file_obj=output_path, file_type='3mf')
             else:
                 # Export using trimesh with the specified format type
                 mesh_obj.export(
