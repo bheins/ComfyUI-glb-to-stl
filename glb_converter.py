@@ -1,29 +1,42 @@
 import os
 import trimesh
 import numpy as np
+import meshlab
 from pygltflib import GLTF2
 
-class GLBToSTLNode:
+class Mesh3DExporterNode:
     def __init__(self):
-        self.output_dir = "output/glb_to_stl"
+        # Use absolute path for output directory
+        self.output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "output", "mesh_exports"))
         os.makedirs(self.output_dir, exist_ok=True)
+        
+    SUPPORTED_FORMATS = {
+        "STL Binary": {"extension": ".stl", "type": "stl"},
+        "STL ASCII": {"extension": ".stl", "type": "stl-ascii"},
+        "3MF": {"extension": ".3mf", "type": "3mf"},
+        "OBJ": {"extension": ".obj", "type": "obj"},
+        "PLY Binary": {"extension": ".ply", "type": "ply"},
+        "PLY ASCII": {"extension": ".ply", "type": "ply-ascii"},
+    }
         
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "mesh": ("MESH", {"default": None}),  # Specify compatibility with ComfyUI-3D-Pack MESH type
-                "output_filename": ("STRING", {"default": "output.stl"}),
+                "output_filename": ("STRING", {"default": "output"}),
+                "format": (list(cls.SUPPORTED_FORMATS.keys()), {"default": "STL Binary"}),
+                "target_size_mm": ("FLOAT", {"default": 100.0, "min": 1.0, "max": 1000.0, "step": 1.0}),
                 "min_size": ("FLOAT", {"default": 10.0, "min": 0.1, "max": 1000.0, "step": 0.1}),
             }
         }
     RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("stl_path",)
+    RETURN_NAMES = ("output_path",)
     FUNCTION = "convert"
     CATEGORY = "3D"
     OUTPUT_NODE = True
 
-    def convert(self, mesh, output_filename, min_size):
+    def convert(self, mesh, output_filename, format, target_size_mm, min_size):
         try:
             # Debug print to inspect mesh structure
             print(f"Mesh type: {type(mesh)}")
@@ -68,22 +81,54 @@ class GLBToSTLNode:
 
             # Handle output filename extension
             base_name = os.path.splitext(output_filename)[0]
-            output_filename = f"{base_name}.stl"
+            if not base_name:
+                base_name = "output"
+            
+            # Get format details from SUPPORTED_FORMATS
+            format_info = self.SUPPORTED_FORMATS[format]
+            output_filename = f"{base_name}{format_info['extension']}"
+            
+            # Get absolute output path
+            output_path = os.path.abspath(os.path.join(self.output_dir, output_filename))
             
             # Ensure output directory exists
-            os.makedirs(self.output_dir, exist_ok=True)
-            output_path = os.path.join(self.output_dir, output_filename)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
-            # Export as STL without redundant file_obj parameter
-            print(f"Attempting to export STL to: {output_path}")
-            mesh_obj.export(output_path, file_type='stl')
+            # Apply target size scaling if specified
+            if target_size_mm > 0:
+                current_size = mesh_obj.bounding_box.extents
+                max_current_size = np.max(current_size)
+                scale_factor = target_size_mm / max_current_size
+                print(f"Scaling mesh to target size {target_size_mm}mm (current max size: {max_current_size:.2f}mm)")
+                mesh_obj.apply_scale(scale_factor)
+            elif min_size > 0:  # Apply minimum size scaling only if target_size not specified
+                current_size = mesh_obj.bounding_box.extents
+                min_current_size = np.min(current_size)
+                if min_current_size < min_size:
+                    scale_factor = min_size / min_current_size
+                    print(f"Mesh is too small (smallest dimension: {min_current_size:.2f}). Scaling up by factor of {scale_factor:.2f}")
+                    mesh_obj.apply_scale(scale_factor)
+            
+            print(f"Attempting to export {format} to: {output_path}")
+            
+            if format == "3MF":
+                # Export using pymeshlab for 3MF
+                ms = meshlab.MeshSet()
+                ms.add_mesh(meshlab.Mesh(mesh_obj.vertices, mesh_obj.faces))
+                ms.save_current_mesh(output_path)
+            else:
+                # Export using trimesh with the specified format type
+                mesh_obj.export(
+                    file_obj=output_path,
+                    file_type=format_info['type']
+                )
             
             if not os.path.exists(output_path):
-                raise ValueError("Failed to save STL file")
+                raise ValueError(f"Failed to save {format} file at {output_path}")
                 
-            print(f"Successfully exported STL to: {output_path}")
+            print(f"Successfully exported {format} to: {output_path}")
             return (output_path,)
             
         except Exception as e:
-            print(f"Error converting mesh to STL: {str(e)}")
-            return ("",)  # Return empty string instead of None for better workflow compatibility
+            print(f"Error exporting mesh: {str(e)}")
+            return ("")
