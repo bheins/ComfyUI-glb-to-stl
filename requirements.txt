@@ -3,5 +3,3 @@ numpy>=1.21.0
 pygltflib>=0.4.0
 numpy-stl>=3.0.0  # For better STL handling
 pymeshlab>=2022.1  # For 3MF export support
-numpy-stl>=3.0.0  # For better STL handling
-pymeshlab>=2022.1  # For 3MF export support

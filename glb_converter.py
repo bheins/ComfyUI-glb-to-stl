@@ -1,7 +1,7 @@
 import os
 import trimesh
 import numpy as np
-import meshlab
+import pymeshlab
 from pygltflib import GLTF2
 
 class Mesh3DExporterNode:
@@ -113,8 +113,9 @@ class Mesh3DExporterNode:
             
             if format == "3MF":
                 # Export using pymeshlab for 3MF
-                ms = meshlab.MeshSet()
-                ms.add_mesh(meshlab.Mesh(mesh_obj.vertices, mesh_obj.faces))
+                ms = pymeshlab.MeshSet()
+                # Convert trimesh vertices and faces to numpy arrays for pymeshlab
+                ms.add_mesh(vertices=mesh_obj.vertices, faces=mesh_obj.faces)
                 ms.save_current_mesh(output_path)
             else:
                 # Export using trimesh with the specified format type
