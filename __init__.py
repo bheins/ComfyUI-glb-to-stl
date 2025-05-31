@@ -1,11 +1,11 @@
-from .glb_converter import GLBToSTLNode
+from .glb_converter import Mesh3DExporterNode
 
 NODE_CLASS_MAPPINGS = {
-    "GLBToSTLNode": GLBToSTLNode
+    "Mesh3DExporterNode": Mesh3DExporterNode
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "GLBToSTLNode": "GLB to STL Converter"
+    "Mesh3DExporterNode": "Mesh3D Exporter"
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
