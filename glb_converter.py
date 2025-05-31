@@ -115,8 +115,14 @@ class Mesh3DExporterNode:
                 try:
                     # Export using pymeshlab for 3MF
                     ms = pymeshlab.MeshSet()
-                    # Create a new mesh from vertex and face arrays
-                    ms.add_mesh(vertex_matrix=mesh_obj.vertices, face_matrix=mesh_obj.faces)
+                    # Create a new pymeshlab Mesh object
+                    new_mesh = pymeshlab.Mesh(
+                        vertex_matrix=mesh_obj.vertices, 
+                        face_matrix=mesh_obj.faces,
+                        # Ensure face indices are int32 as required by pymeshlab
+                        face_matrix_dtype=np.int32
+                    )
+                    ms.add_mesh(new_mesh)
                     ms.save_current_mesh(output_path)
                 except Exception as e:
                     print(f"Error with pymeshlab export: {str(e)}")
@@ -128,7 +134,7 @@ class Mesh3DExporterNode:
                     file_obj=output_path,
                     file_type=format_info['type']
                 )
-            
+                
             if not os.path.exists(output_path):
                 raise ValueError(f"Failed to save {format} file at {output_path}")
                 
